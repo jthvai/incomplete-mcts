@@ -1,0 +1,11 @@
+package comp1140.ass2.util;
+
+import java.util.HashSet;
+
+public class UnorderedPair<T> extends HashSet<T>  {
+    public UnorderedPair(T da, T db) {
+        super(2);
+        this.add(da);
+        this.add(db);
+    }
+}
