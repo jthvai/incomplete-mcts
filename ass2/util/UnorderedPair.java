@@ -8,4 +8,13 @@ public class UnorderedPair<T> extends HashSet<T>  {
         this.add(da);
         this.add(db);
     }
+
+    public T getNot(T v) {
+        for (T o : this) {
+            if (!o.equals(v)) {
+                return o;
+            }
+        }
+        return null;
+    }
 }

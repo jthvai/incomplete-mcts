@@ -1,6 +1,8 @@
 package comp1140.ass2.ai;
 
 import comp1140.ass2.util.Pair;
+import comp1140.ass2.util.Triple;
+import comp1140.ass2.util.UnorderedPair;
 
 import java.util.*;
 
@@ -61,9 +63,8 @@ public class State {
 
             int x = Character.getNumericValue(curr.charAt(2));
             int y = Character.getNumericValue(curr.charAt(3));
-            t.rot = Character.getNumericValue(curr.charAt(4));
-            this.board[x][y] = t;
-            this.addDaikaijuToBoard(t);
+            int rot = Character.getNumericValue(curr.charAt(4));
+            this.addDaikaijuToBoard(new Triple<>(x, y, rot),t);
         }
         for (int i = 0; i < ships.length(); i += 4) {
             String curr = ships.substring(i, i + 4);
@@ -98,23 +99,46 @@ public class State {
         return clone;
     }
 
-    public State applyMove(Wake tile, int rot) {
-        Pair<Integer, Integer> tileDest = this.myAdjacency();
+    public State applyMove(Wake tile, int rot) throws InvalidMoveException,
+                                                      CloneNotSupportedException {
+        State clone = (State) this.clone();
 
-        Random rand = new Random();
-        int dice = rand.nextInt(6) + rand.nextInt(6) + 2;
+        Pair<Integer, Integer> tileDest = clone.myAdjacency();
+        clone.board[tileDest.a][tileDest.a] = tile;
 
-        if (dice > 5 && dice < 9) {
-            this.moveDaikaiju();
+        for (Ship s : clone.ships) {
+            boolean move = false;
+            switch (s.exitDir()) {
+                case UP:
+                    move = s.x == tileDest.a && s.y - 1 == tileDest.b;
+                    break;
+                case LEFT:
+                    move = s.x - 1 == tileDest.a && s.y == tileDest.b;
+                    break;
+                case DOWN:
+                    move = s.x == tileDest.a && s.y + 1 == tileDest.b;
+                    break;
+                case RIGHT:
+                    move = s.x + 1 == tileDest.a && s.y == tileDest.b;
+                    break;
+                default:
+                    break;
+            }
+            if (move) {
+                clone.moveShip(s);
+            }
         }
-    }
 
-    public void moveDaikaiju() {
+        Set<Triple<Integer, Integer, Integer>> landings = new HashSet<>(8);
+        for (Ship s : clone.ships) {
+            Triple<Integer, Integer, Integer> dest = new Triple<>(s.x, s.y, s.exit);
+            if (landings.contains(dest)) {
+                throw new InvalidMoveException();
+            }
+            landings.add(dest);
+        }
 
-    }
-
-    public boolean isMoveValid() {
-        return false;
+        return clone;
     }
 
     private Pair<Integer, Integer> myAdjacency() {
@@ -161,10 +185,290 @@ public class State {
         return new Pair<>(x, y);
     }
 
-    private void addDaikaijuToBoard(Daikaiju d) {
+    private void moveShip(Ship s) throws InvalidMoveException {
+        final Triple<Integer, Integer, Integer> init = new Triple<>(s.x, s.y, s.exit);
+
+        switch (s.exit) {
+            case 0:
+            case 1:
+                s.y--;
+                break;
+            case 2:
+            case 3:
+                s.x++;
+                break;
+            case 4:
+            case 5:
+                s.y++;
+                break;
+            case 6:
+            case 7:
+                s.x--;
+                break;
+            default:
+                break;
+        }
+        Wake landing = (Wake) this.board[s.x][s.y];
+
+        UnorderedPair<Integer> path = null;
+        for (UnorderedPair<Integer> p : landing.exits) {
+            if (p.contains(getOppositeExit(s.exit))) {
+                path = p;
+            }
+        }
+        assert path != null;
+
+        s.exit = path.getNot(s.exit);
+
+        this.moveShipRecurse(s, init);
+    }
+
+    private void moveShipRecurse(Ship s, Triple<Integer, Integer, Integer> init)
+        throws InvalidMoveException {
+        if (s.equalsState(init)) {
+            if (s.me) {
+                throw new InvalidMoveException();
+            }
+            else {
+                this.ships.remove(s);
+            }
+        }
+
+        switch (s.exit) {
+            case 0:
+            case 1:
+                s.y--;
+                break;
+            case 2:
+            case 3:
+                s.x++;
+                break;
+            case 4:
+            case 5:
+                s.y++;
+                break;
+            case 6:
+            case 7:
+                s.x--;
+                break;
+            default:
+                break;
+        }
+        Wake landing = (Wake) this.board[s.x][s.y];
+
+        UnorderedPair<Integer> path = null;
+        for (UnorderedPair<Integer> p : landing.exits) {
+            if (p.contains(getOppositeExit(s.exit))) {
+                path = p;
+            }
+        }
+        assert path != null;
+
+        s.exit = path.getNot(s.exit);
+
+        if (s.isAtEdge()) {
+            if (s.me) {
+                throw new InvalidMoveException();
+            }
+            else {
+                this.ships.remove(s);
+            }
+        }
+
+        Tile nextTile = null;
+        switch (s.exitDir()) {
+            case UP:
+                nextTile = this.board[s.x][s.y - 1];
+                break;
+            case LEFT:
+                nextTile = this.board[s.x - 1][s.y];
+                break;
+            case DOWN:
+                nextTile = this.board[s.x][s.y + 1];
+                break;
+            case RIGHT:
+                nextTile = this.board[s.x + 1][s.y];
+                break;
+            default:
+                break;
+        }
+
+        if (nextTile instanceof Daikaiju) {
+            if (s.me) {
+                throw new InvalidMoveException();
+            }
+            else {
+                this.ships.remove(s);
+            }
+        }
+        else if (nextTile instanceof Wake) {
+            this.moveShipRecurse(s, init);
+        }
+    }
+
+    public void moveDaikaiju() throws GameEndedException {
+        Random rand = new Random();
+        int die = rand.nextInt(6);
+
+        if (die == 6) {
+            Pair<Integer, Integer> dest;
+            do {
+                dest = daikaijuPlacement();
+            } while (this.board[dest.a][dest.b] instanceof Daikaiju);
+
+            int dInd = rand.nextInt(this.daikaijuDrawPile.size());
+            Daikaiju d = this.daikaijuDrawPile.remove(dInd);
+            int rot = rand.nextInt(4);
+
+            this.addDaikaijuToBoard(new Triple<>(dest.a, dest.b, rot), d);
+
+            for (Ship s : this.ships) {
+                Pair <Integer, Integer> adj = this.myAdjacency();
+                if (s.me && ((s.x == dest.a && s.y == dest.b) ||
+                    (adj.a.equals(dest.a) && adj.b.equals(dest.b)))) {
+                    throw new GameEndedException();
+                }
+                else if (s.x == dest.a && s.y == dest.b) {
+                    this.ships.remove(s);
+                }
+            }
+        }
+        else {
+            for (Daikaiju d : this.daikaijuBoard) {
+                Daikaiju.Dir dir = d.movements[die].applyRot(d.rot);
+                if (dir == Daikaiju.Dir.ROT) {
+                    d.rot = (d.rot + 1) % 4;
+                }
+                else {
+                    int x = -1,
+                        y = -1;
+                    for (int i = 0; i < 7; i++) {
+                        for (int j = 0; j < 7; j++) {
+                            if (this.board[i][j] == d) {
+                                x = i;
+                                y = j;
+                            }
+                        }
+                    }
+                    assert x != -1;
+                    assert y != -1;
+
+                    board[x][y] = null;
+                    switch (dir) {
+                        case UP:
+                            if (y == 0) {
+                                this.daikaijuBoard.remove(d);
+                                this.addDaikaijuToDraw(d);
+                            }
+                            else {
+                                y--;
+                            }
+                        case LEFT:
+                            if (x == 0) {
+                                this.daikaijuBoard.remove(d);
+                                this.addDaikaijuToDraw(d);
+                            }
+                            else {
+                                x--;
+                            }
+                        case DOWN:
+                            if (y == 6) {
+                                this.daikaijuBoard.remove(d);
+                                this.addDaikaijuToDraw(d);
+                            }
+                            else {
+                                y++;
+                            }
+                        case RIGHT:
+                            if (x == 6) {
+                                this.daikaijuBoard.remove(d);
+                                this.addDaikaijuToDraw(d);
+                            }
+                            else {
+                                x++;
+                            }
+                    }
+                    if (board[x][y] instanceof Daikaiju) {
+                        Daikaiju otherD = (Daikaiju) board[x][y];
+                        this.daikaijuBoard.remove(otherD);
+                        this.addDaikaijuToDraw(otherD);
+                    }
+                    else if (board[x][y] instanceof Wake) {
+                        this.addWakeToDraw((Wake) board[x][y]);
+                    }
+                    board[x][y] = d;
+
+                    for (Ship s : this.ships) {
+                        Pair <Integer, Integer> adj = this.myAdjacency();
+                        if (s.me && ((s.x == x && s.y == y) || (adj.a == x && adj.b == y))) {
+                            throw new GameEndedException();
+                        }
+                        else if (s.x == x && s.y == y) {
+                            this.ships.remove(s);
+                        }
+                    }
+                }
+            }
+
+            while (this.daikaijuBoard.size() < 3) {
+                Pair<Integer, Integer> dest;
+                do {
+                    dest = daikaijuPlacement();
+                } while (this.board[dest.a][dest.b] instanceof Daikaiju);
+
+                int dInd = rand.nextInt(this.daikaijuDrawPile.size());
+                Daikaiju d = this.daikaijuDrawPile.remove(dInd);
+                int rot = rand.nextInt(4);
+
+                this.addDaikaijuToBoard(new Triple<>(dest.a, dest.b, rot), d);
+
+                for (Ship s : this.ships) {
+                    Pair <Integer, Integer> adj = this.myAdjacency();
+                    if (s.me && ((s.x == dest.a && s.y == dest.b) ||
+                                 (adj.a.equals(dest.a) && adj.b.equals(dest.b)))) {
+                        throw new GameEndedException();
+                    }
+                    else if (s.x == dest.a && s.y == dest.b) {
+                        this.ships.remove(s);
+                    }
+                }
+            }
+        }
+    }
+
+    private static Pair<Integer, Integer> daikaijuPlacement() {
+        Random rand = new Random();
+        int gold = rand.nextInt(6);
+        int blue = rand.nextInt(6);
+        int x = gold - (gold < 4 ? 0 : 1);
+        int y = blue - (blue < 4 ? 0 : 1);
+        return new Pair<>(gold - (gold < 4 ? 0 : 1), blue - (blue < 4 ? 0 : 1));
+    }
+
+    private void addDaikaijuToBoard(Triple<Integer, Integer, Integer> xyr, Daikaiju d) {
+        d.rot = xyr.c;
+        if (this.board[xyr.a][xyr.b] instanceof Wake) {
+            this.addWakeToDraw((Wake) this.board[xyr.a][xyr.b]);
+        }
+        this.board[xyr.a][xyr.b] = d;
+
         int j = 0;
         for (; j < this.daikaijuBoard.size() && this.daikaijuBoard.get(j).type < d.type; j++);
         j = d.colour == Daikaiju.Col.B && this.daikaijuBoard.get(j).type == d.type ? j + 1 : j;
         this.daikaijuBoard.add(j, d);
+    }
+
+    private void addWakeToDraw(Wake w) {
+        Random rand = new Random();
+        int insInd = rand.nextInt(this.wakeDrawPile.size());
+        w.rot = 0;
+        this.wakeDrawPile.add(insInd, w);
+    }
+
+    private void addDaikaijuToDraw(Daikaiju d) {
+        Random rand = new Random();
+        int insInd = rand.nextInt(this.daikaijuDrawPile.size());
+        d.rot = 0;
+        this.daikaijuDrawPile.add(insInd, d);
     }
 }
