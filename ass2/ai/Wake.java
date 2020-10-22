@@ -5,6 +5,9 @@ import java.util.HashSet;
 import comp1140.ass2.Tsuro;
 import comp1140.ass2.util.UnorderedPair;
 
+/**
+ * Wake tile.
+ */
 public class Wake extends Tile {
     public final int id;
     public final Set<UnorderedPair<Integer>> exits;

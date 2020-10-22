@@ -3,8 +3,10 @@ package comp1140.ass2.ai;
 import comp1140.ass2.util.*;
 
 import static comp1140.ass2.ai.Daikaiju.Dir;
-import static comp1140.ass2.core.WakeTile.getOppositeExit;
 
+/**
+ * Ship, representing a player.
+ */
 public class Ship {
     public final char colour;
     public int x;
@@ -20,10 +22,21 @@ public class Ship {
         this.me = me;
     }
 
+    /**
+     * Whether this is in the location indicated.
+     *
+     * @param xye Location to compare against
+     * @return True if this is in the same location as xye
+     */
     public boolean equalsState(Triple<Integer, Integer, Integer> xye) {
         return this.x == xye.a && this.y == xye.b && this.exit == xye.c;
     }
 
+    /**
+     * Whether this is facing the edge of the board.
+     *
+     * @return True if this is at the edge of the board
+     */
     public boolean isAtEdge() {
         switch (this.exit) {
             case 0:
@@ -43,6 +56,11 @@ public class Ship {
         }
     }
 
+    /**
+     * Direction that this is facing out of its current wake tile.
+     *
+     * @return Direction of this's current exit
+     */
     public Daikaiju.Dir exitDir() {
         switch (this.exit) {
             case 0:

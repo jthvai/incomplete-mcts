@@ -8,6 +8,9 @@ import java.util.*;
 
 import static comp1140.ass2.core.WakeTile.getOppositeExit;
 
+/**
+ * Board state.
+ */
 public class State {
     public Tile[][] board;
     public Set<Ship> ships;
@@ -78,6 +81,12 @@ public class State {
         }
     }
 
+    /**
+     * Deep clone this.
+     *
+     * @return Deep clone of this
+     * @throws CloneNotSupportedException Object cannot be cloned
+     */
     @Override
     public Object clone() throws CloneNotSupportedException {
         State clone = (State) super.clone();
@@ -91,6 +100,12 @@ public class State {
         return clone;
     }
 
+    /**
+     * Deep clones a 2D array of Objects.
+     *
+     * @param m Matrix to clone
+     * @return Deep clone of an Object
+     */
     private static Object[][] deepClone(Object[][] m) {
         Object[][] clone = new Object[m.length][m[0].length];
         for (int i = 0; i < m.length; i++) {
@@ -99,8 +114,18 @@ public class State {
         return clone;
     }
 
-    public State applyMove(Wake tile, int rot) throws InvalidMoveException,
-                                                      CloneNotSupportedException {
+    /**
+     * Place a wake tile.
+     *
+     * @param tile Tile to place
+     * @param rot Rotation in which to place the tile
+     * @return A pair indicating a new drawn wake tile, and the board state after the move
+     * @throws InvalidMoveException Move is not valid
+     * @throws CloneNotSupportedException State cannot be cloned
+     * @throws GameWonException Game won through this move
+     */
+    public Pair<Wake, State> applyMove(Wake tile, int rot) throws InvalidMoveException,
+        CloneNotSupportedException, GameWonException {
         State clone = (State) this.clone();
 
         Pair<Integer, Integer> tileDest = clone.myAdjacency();
@@ -138,9 +163,22 @@ public class State {
             landings.add(dest);
         }
 
-        return clone;
+        if (clone.ships.size() == 1) {
+            throw new GameWonException();
+        }
+
+        Random rand = new Random();
+        int wInt = rand.nextInt(clone.wakeDrawPile.size());
+        Wake w = clone.wakeDrawPile.remove(wInt);
+
+        return new Pair<>(w, clone);
     }
 
+    /**
+     * Compute the tile that my ship is facing.
+     *
+     * @return A pair indicating the coordinates of the adjacent tile
+     */
     private Pair<Integer, Integer> myAdjacency() {
         Ship myShip = null;
         for (Ship s : this.ships) {
@@ -185,7 +223,14 @@ public class State {
         return new Pair<>(x, y);
     }
 
-    private void moveShip(Ship s) throws InvalidMoveException {
+    /**
+     * Move a single ship until it is unable to do so.
+     *
+     * @param s Ship to move
+     * @throws InvalidMoveException Move is not valid - propagated to applyMove()
+     * @throws GameWonException Game won through this move - propagated to applyMove()
+     */
+    private void moveShip(Ship s) throws InvalidMoveException, GameWonException {
         final Triple<Integer, Integer, Integer> init = new Triple<>(s.x, s.y, s.exit);
 
         switch (s.exit) {
@@ -223,8 +268,16 @@ public class State {
         this.moveShipRecurse(s, init);
     }
 
+    /**
+     * Recursive helper for moveShip().
+     *
+     * @param s Ship to move
+     * @param init Initial state to check against for endless recursion
+     * @throws InvalidMoveException Move is not valid - propagated to applyMove()
+     * @throws GameWonException Game won through this move - propagated to applyMove()
+     */
     private void moveShipRecurse(Ship s, Triple<Integer, Integer, Integer> init)
-        throws InvalidMoveException {
+        throws InvalidMoveException, GameWonException {
         if (s.equalsState(init)) {
             if (s.me) {
                 throw new InvalidMoveException();
@@ -304,9 +357,19 @@ public class State {
         else if (nextTile instanceof Wake) {
             this.moveShipRecurse(s, init);
         }
+
+        if (this.ships.size() == 1) {
+            throw new GameWonException();
+        }
     }
 
-    public void moveDaikaiju() throws GameEndedException {
+    /**
+     * Move daikaijus.
+     *
+     * @throws GameLostException Game lost after movement
+     * @throws GameWonException Game won after movement
+     */
+    public void moveDaikaiju() throws GameLostException, GameWonException {
         Random rand = new Random();
         int die = rand.nextInt(6);
 
@@ -326,7 +389,7 @@ public class State {
                 Pair <Integer, Integer> adj = this.myAdjacency();
                 if (s.me && ((s.x == dest.a && s.y == dest.b) ||
                     (adj.a.equals(dest.a) && adj.b.equals(dest.b)))) {
-                    throw new GameEndedException();
+                    throw new GameLostException();
                 }
                 else if (s.x == dest.a && s.y == dest.b) {
                     this.ships.remove(s);
@@ -401,7 +464,7 @@ public class State {
                     for (Ship s : this.ships) {
                         Pair <Integer, Integer> adj = this.myAdjacency();
                         if (s.me && ((s.x == x && s.y == y) || (adj.a == x && adj.b == y))) {
-                            throw new GameEndedException();
+                            throw new GameLostException();
                         }
                         else if (s.x == x && s.y == y) {
                             this.ships.remove(s);
@@ -426,7 +489,7 @@ public class State {
                     Pair <Integer, Integer> adj = this.myAdjacency();
                     if (s.me && ((s.x == dest.a && s.y == dest.b) ||
                                  (adj.a.equals(dest.a) && adj.b.equals(dest.b)))) {
-                        throw new GameEndedException();
+                        throw new GameLostException();
                     }
                     else if (s.x == dest.a && s.y == dest.b) {
                         this.ships.remove(s);
@@ -434,8 +497,17 @@ public class State {
                 }
             }
         }
+
+        if (this.ships.size() == 1) {
+            throw new GameWonException();
+        }
     }
 
+    /**
+     * Generate location to place next daikaiju.
+     *
+     * @return A pair indicating the location to place the new daikaiju.
+     */
     private static Pair<Integer, Integer> daikaijuPlacement() {
         Random rand = new Random();
         int gold = rand.nextInt(6);
@@ -445,6 +517,12 @@ public class State {
         return new Pair<>(gold - (gold < 4 ? 0 : 1), blue - (blue < 4 ? 0 : 1));
     }
 
+    /**
+     * Place a daiakaiju on the board.
+     *
+     * @param xyr A triple indicating the coordinates and orientation to place the daikaiju
+     * @param d Daikaiju to place
+     */
     private void addDaikaijuToBoard(Triple<Integer, Integer, Integer> xyr, Daikaiju d) {
         d.rot = xyr.c;
         if (this.board[xyr.a][xyr.b] instanceof Wake) {
@@ -458,6 +536,11 @@ public class State {
         this.daikaijuBoard.add(j, d);
     }
 
+    /**
+     * Add a wake tile to the draw pile.
+     *
+     * @param w Wake tile to add
+     */
     private void addWakeToDraw(Wake w) {
         Random rand = new Random();
         int insInd = rand.nextInt(this.wakeDrawPile.size());
@@ -465,6 +548,11 @@ public class State {
         this.wakeDrawPile.add(insInd, w);
     }
 
+    /**
+     * Add a daikaiju to the draw pile.
+     *
+     * @param d Daikaiju to add
+     */
     private void addDaikaijuToDraw(Daikaiju d) {
         Random rand = new Random();
         int insInd = rand.nextInt(this.daikaijuDrawPile.size());

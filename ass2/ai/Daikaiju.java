@@ -1,14 +1,34 @@
 package comp1140.ass2.ai;
 
+/**
+ * Daikaiju tile.
+ */
 public class Daikaiju extends Tile {
+    /**
+     * Colour.
+     */
     enum Col { B, G }
+
+    /**
+     * Movement directions.
+     */
     enum Dir { ROT, UP, LEFT, DOWN, RIGHT;
         private static final Dir[] vals = values();
 
+        /**
+         * Compute the next element in enum.
+         *
+         * @return Next element in enumeration
+         */
         private Dir next() {
             return vals[(this.ordinal() + 1) % vals.length];
         }
 
+        /**
+         * Compute the next direction after rotating once anti-clockwise.
+         * @param rot Amount of rotations to apply
+         * @return Resultant direction after applying rotations
+         */
         public Dir applyRot(int rot) {
             if (this == ROT) {
                 return this;
@@ -25,6 +45,10 @@ public class Daikaiju extends Tile {
             }
         }
     }
+
+    /**
+     * Index-able Daikaiju movement patterns.
+     */
     final Dir[][] movementTemplate = {
         {Dir.ROT, Dir.UP, Dir.LEFT, Dir.DOWN, Dir.RIGHT},
         {Dir.RIGHT, Dir.ROT, Dir.UP, Dir.LEFT, Dir.DOWN},
