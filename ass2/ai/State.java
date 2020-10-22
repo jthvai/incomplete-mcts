@@ -15,7 +15,7 @@ public class State {
     public Tile[][] board;
     public Set<Ship> ships;
 
-    public Set<Wake> hand;
+    public LinkedList<Wake> hand;
     public LinkedList<Wake> wakeDrawPile;
     public LinkedList<Daikaiju> daikaijuBoard;
     public LinkedList<Daikaiju> daikaijuDrawPile;
@@ -24,7 +24,7 @@ public class State {
         this.board = new Tile[7][7];
         this.ships = new HashSet<>(8);
 
-        this.hand = new HashSet<>(3);
+        this.hand = new LinkedList<>();
         for (int i = 0; i < hand.length(); i += 2) {
             Wake t = new Wake(Integer.parseInt(hand.substring(i, i + 2)), 0);
             this.hand.add(t);
@@ -93,7 +93,7 @@ public class State {
 
         clone.board = (Tile[][]) deepClone(this.board);
         clone.ships = new HashSet<>(this.ships);
-        clone.hand = new HashSet<>(this.hand);
+        clone.hand = new LinkedList<>(this.hand);
         clone.wakeDrawPile = new LinkedList<>(this.wakeDrawPile);
         clone.daikaijuDrawPile = new LinkedList<>(this.daikaijuDrawPile);
 
