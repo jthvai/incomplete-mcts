@@ -129,6 +129,7 @@ public class State {
         State clone = (State) this.clone();
 
         Pair<Integer, Integer> tileDest = clone.myAdjacency();
+        tile.rot = rot;
         clone.board[tileDest.a][tileDest.a] = tile;
 
         for (Ship s : clone.ships) {
@@ -179,7 +180,7 @@ public class State {
      *
      * @return A pair indicating the coordinates of the adjacent tile
      */
-    private Pair<Integer, Integer> myAdjacency() {
+    public Pair<Integer, Integer> myAdjacency() {
         Ship myShip = null;
         for (Ship s : this.ships) {
             if (s.me) {

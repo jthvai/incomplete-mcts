@@ -1,17 +1,15 @@
 package comp1140.ass2.ai;
 
-import comp1140.ass2.util.Pair;
-import comp1140.ass2.util.RoseTree;
+import comp1140.ass2.util.*;
 
 import java.util.LinkedList;
 
 /**
- * Tree of states, and UCT values.
+ * Tree of nodes.
  */
-public class StateTree extends RoseTree<Pair<Double, State>> {
-    public StateTree(Double mcVal, State data,
-                     RoseTree<Pair<Double, State>> parent,
-                     LinkedList<RoseTree<Pair<Double, State>>> children) {
-        super(new Pair<Double, State>(mcVal, data), parent, children);
+public class StateTree extends RoseTree<Node> {
+    public StateTree(State data,
+                     StateTree parent) {
+        super(new Node(0, 0, data), parent, new LinkedList<>());
     }
 }

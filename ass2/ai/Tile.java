@@ -9,4 +9,15 @@ public class Tile {
     public Tile(int rot) {
         this.rot = rot;
     }
+
+    /**
+     * Clone this.
+     *
+     * @return Clone of this
+     * @throws CloneNotSupportedException Object cannot be cloned
+     */
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
+    }
 }
