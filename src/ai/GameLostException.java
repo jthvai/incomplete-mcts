@@ -1,4 +1,4 @@
-package comp1140.ass2.ai;
+package mcts.ai;
 
 /**
  * Thrown when a state results in a win.

@@ -1,4 +1,4 @@
-package comp1140.ass2.util;
+package mcts.util;
 
 /**
  * Immutable polymorphic triple.

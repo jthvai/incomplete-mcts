@@ -1,6 +1,6 @@
-package comp1140.ass2.ai;
+package mcts.ai;
 
-import comp1140.ass2.util.*;
+import mcts.util.*;
 
 import java.util.LinkedList;
 

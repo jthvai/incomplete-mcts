@@ -1,6 +1,6 @@
-package comp1140.ass2.ai;
+package mcts.ai;
 
-import comp1140.ass2.util.MutableTriple;
+import mcts.util.MutableTriple;
 
 /**
  * Node of visits, times won from this node, and state.

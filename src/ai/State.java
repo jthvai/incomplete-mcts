@@ -1,12 +1,12 @@
-package comp1140.ass2.ai;
+package mcts.ai;
 
-import comp1140.ass2.util.Pair;
-import comp1140.ass2.util.Triple;
-import comp1140.ass2.util.UnorderedPair;
+import mcts.util.Pair;
+import mcts.util.Triple;
+import mcts.util.UnorderedPair;
 
 import java.util.*;
 
-import static comp1140.ass2.core.WakeTile.getOppositeExit;
+import static mcts.ai.Wake.oppositeExit;
 
 /**
  * Board state.

@@ -1,8 +1,8 @@
-package comp1140.ass2.ai;
+package mcts.ai;
 
-import comp1140.ass2.util.*;
+import mcts.util.*;
 
-import static comp1140.ass2.ai.Daikaiju.Dir;
+import static mcts.ai.Daikaiju.Dir;
 
 /**
  * Ship, representing a player.
